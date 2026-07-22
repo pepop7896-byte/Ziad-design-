@@ -11,6 +11,7 @@
             --bg-dark: #0f172a;
             --card-bg: rgba(30, 41, 59, 0.7);
             --text-color: #f8fafc;
+            --glow-neon: rgba(0, 255, 136, 0.4);
         }
 
         * {
@@ -18,7 +19,7 @@
             margin: 0;
             padding: 0;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            transition: all 0.3s ease;
+            transition: all 0.2s ease; /* سرعة استجابة أعلى وأكثر سلاسة */
         }
 
         body {
@@ -33,12 +34,12 @@
         }
 
         .fade-in {
-            animation: fadeIn 0.8s ease-out forwards;
+            animation: fadeIn 0.4s ease-out forwards; /* تسريع الأنيميشن لتجنب أي شعور بالتعليق */
             opacity: 0;
         }
 
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
+            from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
         }
 
@@ -55,7 +56,7 @@
             overflow: hidden;
             margin: 0 auto 15px auto;
             border: 3px solid var(--primary-color);
-            box-shadow: 0 0 20px rgba(0, 255, 136, 0.3);
+            box-shadow: 0 0 25px var(--glow-neon);
             position: relative;
             background: #000;
         }
@@ -78,6 +79,7 @@
             color: #cbd5e1;
             padding: 5px;
             border-radius: 5px;
+            text-shadow: 0 0 10px rgba(0, 255, 136, 0.2);
         }
 
         .nav-boxes {
@@ -99,12 +101,25 @@
             font-weight: bold;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
             position: relative;
+            overflow: hidden;
+        }
+
+        .nav-box::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, transparent, var(--primary-color), transparent);
+            box-shadow: 0 0 12px var(--primary-color);
+            opacity: 0.8;
         }
 
         .nav-box:hover {
             border-color: var(--primary-color);
-            transform: translateY(-5px);
-            box-shadow: 0 10px 25px rgba(0, 255, 136, 0.2);
+            transform: translateY(-3px);
+            box-shadow: 0 12px 30px var(--glow-neon);
         }
 
         .box-edit-pen {
@@ -139,6 +154,18 @@
             margin-bottom: 30px;
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
             padding-bottom: 15px;
+            position: relative;
+        }
+
+        .section-header::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            right: 0;
+            width: 150px;
+            height: 2px;
+            background: var(--primary-color);
+            box-shadow: 0 0 10px var(--primary-color);
         }
 
         .back-btn {
@@ -166,6 +193,12 @@
             position: relative;
             display: flex;
             flex-direction: column;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+        }
+
+        .post-card:hover {
+            border-color: rgba(0, 255, 136, 0.3);
+            box-shadow: 0 5px 20px rgba(0, 255, 136, 0.15);
         }
 
         .post-card.expired {
@@ -219,6 +252,7 @@
             color: var(--primary-color);
             font-size: 1.1rem;
             font-weight: bold;
+            text-shadow: 0 0 8px rgba(0, 255, 136, 0.2);
         }
 
         .post-dates-info {
@@ -244,7 +278,7 @@
 
         @keyframes pulse-glow {
             0% { box-shadow: 0 0 5px rgba(37, 211, 102, 0.4); }
-            50% { box-shadow: 0 0 20px rgba(37, 211, 102, 0.8); transform: scale(1.02); }
+            50% { box-shadow: 0 0 22px rgba(37, 211, 102, 0.9); transform: scale(1.02); }
             100% { box-shadow: 0 0 5px rgba(37, 211, 102, 0.4); }
         }
 
@@ -264,7 +298,8 @@
         .add-card-btn:hover, .add-box-card:hover {
             border-color: var(--primary-color);
             color: var(--primary-color);
-            background: rgba(0, 255, 136, 0.02);
+            background: rgba(0, 255, 136, 0.03);
+            box-shadow: 0 0 20px var(--glow-neon);
         }
 
         .add-box-card {
@@ -309,6 +344,7 @@
             gap: 15px;
             max-height: 90vh;
             overflow-y: auto;
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.8);
         }
 
         .modal-content input, .modal-content select, .modal-content textarea {
@@ -321,7 +357,7 @@
             outline: none;
         }
 
-        .modal-content input:focus { border-color: var(--primary-color); }
+        .modal-content input:focus { border-color: var(--primary-color); box-shadow: 0 0 10px rgba(0, 255, 136, 0.3); }
 
         .shape-selector {
             display: flex;
@@ -351,8 +387,9 @@
             font-weight: bold;
             border-radius: 8px;
             cursor: pointer;
+            box-shadow: 0 0 15px rgba(0, 255, 136, 0.4);
         }
-        .action-btn:hover { opacity: 0.9; }
+        .action-btn:hover { opacity: 0.9; box-shadow: 0 0 25px rgba(0, 255, 136, 0.7); }
 
         .delete-btn {
             background: #ef4444;
@@ -489,7 +526,7 @@
                 <label for="post-expired-manual" style="color: #ef4444; font-weight: bold;">تفعيل حالة: تم انتهاء العرض يدوياً</label>
             </div>
 
-            <button class="action-btn" onclick="savePostData()">حفظ ونشر</button>
+            <button class="action-btn" id="save-post-btn" onclick="savePostData()">حفظ ونشر</button>
             <button class="delete-btn" id="delete-post-btn" style="display:none;" onclick="deleteCurrentPost()">حذف هذا المنشور</button>
             <button class="back-btn" onclick="closeModals()">إلغاء</button>
         </div>
@@ -501,6 +538,7 @@
         let currentEditingId = null;
         let currentEditingBoxId = null;
         let selectedShape = 'square';
+        let isSaving = false; // لمنع تكرار الضغطات والحفظ المزدوج
 
         let siteData = JSON.parse(localStorage.getItem('siteData_v3')) || {
             profileImg: 'https://via.placeholder.com/150',
@@ -515,9 +553,49 @@
 
         const whatsappNumber = '201503716164';
 
+        // خريطة ترتيب أيام الأسبوع لحساب الانتهاء التلقائي بدقة
+        const daysMap = { 'السبت': 0, 'الأحد': 1, 'الإثنين': 2, 'الثلاثاء': 3, 'الأربعاء': 4, 'الخميس': 5, 'الجمعة': 6 };
+
         window.onload = function() {
+            checkAutomaticExpiry();
             renderHome();
         };
+
+        // دالة لفحص وعرض انتهاء العروض تلقائياً بناءً على اليوم الحالي
+        function checkAutomaticExpiry() {
+            const daysNames = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+            // JavaScript getDay(): الأحد 0، الإثنين 1 ... السبت 6
+            const jsDayIndex = new Date().getDay();
+            // مطابقة مع ترتيب أيامنا (السبت = 0)
+            const currentDayName = jsDayIndex === 6 ? 'السبت' : jsDayIndex === 0 ? 'الأحد' : jsDayIndex === 1 ? 'الإثنين' : jsDayIndex === 2 ? 'الثلاثاء' : jsDayIndex === 3 ? 'الأربعاء' : jsDayIndex === 4 ? 'الخميس' : 'الجمعة';
+            const currentDayVal = daysMap[currentDayName];
+
+            let updated = false;
+            siteData.posts.forEach(post => {
+                if (post.dayStart && post.dayEnd) {
+                    const startVal = daysMap[post.dayStart];
+                    const endVal = daysMap[post.dayEnd];
+                    
+                    let isCurrentlyValid = false;
+                    if (startVal <= endVal) {
+                        isCurrentlyValid = (currentDayVal >= startVal && currentDayVal <= endVal);
+                    } else { // لو العرض يلتف عبر الأسبوع (مثلا من الخميس للأحد)
+                        isCurrentlyValid = (currentDayVal >= startVal || currentDayVal <= endVal);
+                    }
+
+                    // لو اليوم الحالي خارج فترة العرض المحددة، يصبح منتهي تلقائياً
+                    let shouldBeExpired = !isCurrentlyValid;
+                    if (post.autoExpired !== shouldBeExpired) {
+                        post.autoExpired = shouldBeExpired;
+                        updated = true;
+                    }
+                }
+            });
+
+            if (updated) {
+                localStorage.setItem('siteData_v3', JSON.stringify(siteData));
+            }
+        }
 
         function renderHome() {
             document.getElementById('profile-img-display').src = siteData.profileImg;
@@ -668,6 +746,7 @@
         function closeModals() {
             document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
             document.getElementById('admin-pass-input').value = '';
+            isSaving = false;
         }
 
         function renderPosts() {
@@ -678,7 +757,8 @@
 
             sectionPosts.forEach(post => {
                 const card = document.createElement('div');
-                let isExpired = post.expiredManual === true;
+                // يعتبر المنشور منتهياً لو تم تفعيله يدوياً أو انتهى تلقائياً حسب الأيام
+                let isExpired = post.expiredManual === true || post.autoExpired === true;
 
                 card.className = `post-card ${isExpired ? 'expired' : ''} fade-in`;
                 let mediaRadius = post.shape === 'circle' ? '50% 50%' : '0%';
@@ -749,6 +829,8 @@
         }
 
         function savePostData() {
+            if (isSaving) return; // حماية ضد الضغط المتكرر
+            
             const title = document.getElementById('post-title-input').value.trim();
             const price = document.getElementById('post-price-input').value.trim();
             const dayStart = document.getElementById('post-day-start').value;
@@ -761,7 +843,28 @@
                 return;
             }
 
+            isSaving = true;
+            document.getElementById('save-post-btn').innerText = 'جاري الحفظ...';
+
             const processSave = (mediaUrl) => {
+                // حساب الحالة التلقائية مبدئياً فور الحفظ
+                let autoExpired = false;
+                if (dayStart && dayEnd) {
+                    const jsDayIndex = new Date().getDay();
+                    const currentDayName = jsDayIndex === 6 ? ' السبت' : jsDayIndex === 0 ? 'الأحد' : jsDayIndex === 1 ? 'الإثنين' : jsDayIndex === 2 ? 'الثلاثاء' : jsDayIndex === 3 ? 'الأربعاء' : jsDayIndex === 4 ? 'الخميس' : 'الجمعة';
+                    const currentDayVal = daysMap[currentDayName.trim()];
+                    const startVal = daysMap[dayStart];
+                    const endVal = daysMap[dayEnd];
+                    
+                    let isCurrentlyValid = false;
+                    if (startVal <= endVal) {
+                        isCurrentlyValid = (currentDayVal >= startVal && currentDayVal <= endVal);
+                    } else {
+                        isCurrentlyValid = (currentDayVal >= startVal || currentDayVal <= endVal);
+                    }
+                    autoExpired = !isCurrentlyValid;
+                }
+
                 if (currentEditingId) {
                     const post = siteData.posts.find(p => p.id === currentEditingId);
                     post.title = title;
@@ -769,6 +872,7 @@
                     post.dayStart = dayStart;
                     post.dayEnd = dayEnd;
                     post.expiredManual = expiredManual;
+                    post.autoExpired = autoExpired;
                     post.shape = selectedShape;
                     if (mediaUrl) post.mediaUrl = mediaUrl;
                 } else {
@@ -780,14 +884,16 @@
                         dayStart,
                         dayEnd,
                         expiredManual: false,
+                        autoExpired: autoExpired,
                         shape: selectedShape,
                         mediaUrl: mediaUrl || 'https://via.placeholder.com/300'
                     };
-                    siteData.posts.push(newPost);
+                    siteData.posts.unshift(newPost); // وضع المنشور الجديد في أول القائمة لتظهر الاستجابة فوراً
                 }
 
                 localStorage.setItem('siteData_v3', JSON.stringify(siteData));
                 closeModals();
+                document.getElementById('save-post-btn').innerText = 'حفظ ونشر';
                 renderPosts();
             };
 
@@ -812,4 +918,4 @@
         }
     </script>
 </body>
-    </html>
+        </html>
