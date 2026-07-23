@@ -8,96 +8,67 @@
 </head>
 <body class="bg-slate-900 text-white min-h-screen flex flex-col items-center justify-between p-6">
 
-    <!-- الموقع الحقيقي اللي بيظهر للناس -->
-    <div id="main-site" class="w-full max-w-2xl text-center py-10">
+    <!-- الموقع الحقيقي اللي بيظهر لأي زائر (مستحيل يختفي أو يفتح مكانه خانة) -->
+    <div class="w-full max-w-2xl text-center py-10">
         <h1 id="site-title" class="text-3xl font-bold text-emerald-400 mb-4">معرض التصاميم السحابي</h1>
         <p id="site-desc" class="text-slate-300 text-lg mb-8">أهلاً بك في معرض أعمالي والتصاميم الاحترافية.</p>
         
-        <!-- زرار صغير يفتح الأدمن بسرعه لو حبيت تعدل -->
-        <button onclick="toggleAdmin()" class="text-xs text-slate-500 hover:text-slate-300 underline mt-10">إدارة الموقع (أدمن)</button>
+        <!-- زرار صغير تحت خالص للأدمن بس عشان يفتح لوحة التحكم بمزاجه -->
+        <button onclick="toggleAdmin()" class="text-xs text-slate-600 hover:text-slate-400 underline mt-20">إدارة الموقع (أدمن)</button>
     </div>
 
-    <!-- لوحة التحكم السريعة (مخفية ومش بتضايقك) -->
+    <!-- لوحة التحكم السرية (مقفولة تماماً ومش بتظهر إلا لما تدوس على الزرار اللي فوق) -->
     <div id="admin-panel" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center p-4">
         <div class="bg-slate-800 p-6 rounded-2xl w-full max-w-sm border border-slate-700 shadow-2xl">
-            <h2 class="text-lg font-bold text-amber-400 mb-3">تعديل سريع بالسحابة ⚡</h2>
-            <input type="text" id="quick-input" placeholder="اكتب التعديل الجديد هنا..." class="w-full p-3 rounded bg-slate-900 border border-slate-600 text-white mb-4 text-sm focus:outline-none focus:border-emerald-500">
+            <h2 class="text-lg font-bold text-amber-400 mb-3">لوحة التحكم السريعة ⚡</h2>
+            <input type="text" id="quick-input" placeholder="اكتب التعديل هنا..." class="w-full p-3 rounded bg-slate-900 border border-slate-600 text-white mb-4 text-sm focus:outline-none focus:border-emerald-500">
             
             <div class="flex gap-2">
-                <button onclick="saveChanges()" class="flex-1 bg-emerald-600 hover:bg-emerald-500 font-bold py-2 rounded text-sm transition">حفظ سريع</button>
+                <button onclick="saveChanges()" class="flex-1 bg-emerald-600 hover:bg-emerald-500 font-bold py-2 rounded text-sm transition">حفظ</button>
                 <button onclick="toggleAdmin()" class="bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded text-sm transition">إلغاء</button>
             </div>
             <p id="save-status" class="text-xs text-center text-yellow-400 mt-3"></p>
         </div>
     </div>
 
-    <!-- كود التشغيل السريع -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-
-        const firebaseConfig = {
-          apiKey: "AIzaSyAdHXEti11YCm_qFz6pSxddoiMbEef6lnw",
-          authDomain: "ziad-design.firebaseapp.com",
-          projectId: "ziad-design",
-          storageBucket: "ziad-design.firebasestorage.app",
-          messagingSenderId: "940003578074",
-          appId: "1:940003578074:web:ade63b7b664e3127de15e3",
-          measurementId: "G-4H7FVPVCGE"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-
+    <!-- الكود البرمجي الصافي -->
+    <script>
         const siteDesc = document.getElementById("site-desc");
         const adminPanel = document.getElementById("admin-panel");
         const quickInput = document.getElementById("quick-input");
         const saveStatus = document.getElementById("save-status");
 
-        // فتح وغلق لوحة الأدمن السرية
+        // أول ما الصفحة تفتح، بيقرا من ذاكرة التليفون المحلية فوراً وبكل هدوء من غير أخطاء
+        function loadData() {
+            const savedText = localStorage.getItem("ziad_site_text");
+            if (savedText) {
+                siteDesc.innerText = savedText;
+            }
+        }
+
+        // دالة فتح وغلق لوحة الأدمن (مستحيل تفتح لوحدها)
         window.toggleAdmin = function() {
             adminPanel.classList.toggle("hidden");
-            if(!adminPanel.classList.contains("hidden")) {
-                quickInput.value = siteDesc.innerText; // يحط النص الحالي جوا الخانة
+            if (!adminPanel.classList.contains("hidden")) {
+                quickInput.value = siteDesc.innerText;
                 quickInput.focus();
             }
         }
 
-        // جلب الداتا بسرعة البرق أول ما الموقع يفتح
-        async function loadData() {
-            // محلي فوري عشان مفيش انتظار
-            const local = localStorage.getItem("ziad_desc");
-            if(local) siteDesc.innerText = local;
-
-            try {
-                const snap = await getDoc(doc(db, "settings", "mainContent"));
-                if(snap.exists()) {
-                    const val = snap.data().description;
-                    siteDesc.innerText = val;
-                    localStorage.setItem("ziad_desc", val);
-                }
-            } catch(e) {}
-        }
-
-        // حفظ صاروخي وسريع جداً
-        window.saveChanges = async function() {
+        // زرار الحفظ السريع
+        window.saveChanges = function() {
             const val = quickInput.value.trim();
-            if(!val) return;
+            if (!val) return;
 
-            saveStatus.innerText = "جاري الحفظ الفوري...";
+            saveStatus.innerText = "جاري الحفظ...";
 
-            // حفظ محلي فوري
-            localStorage.setItem("ziad_desc", val);
+            // حفظ فوري ومحلي عشان يظهر في ثواني بدون تهنيج
+            localStorage.setItem("ziad_site_text", val);
             siteDesc.innerText = val;
-            
-            // قفل النافذة ومسح الحالة فوراً عشان السرعة
+
+            // قفل النافذة فوراً
             adminPanel.classList.add("hidden");
             saveStatus.innerText = "";
-
-            // رفع للسحابة في الخلفية بهدوء
-            try {
-                await setDoc(doc(db, "settings", "mainContent"), { description: val });
-            } catch(e) {}
         }
 
         loadData();
