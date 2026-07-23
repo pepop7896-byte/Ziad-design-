@@ -3,7 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>معرض التصاميم الاحترافي</title>
+    <title>معرض التصاميم السحابي الاحترافي</title>
+    
+    <!-- استدعاء مكتبات فايربيس (Firebase SDK) السحابية -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+
     <style>
         :root {
             --primary-color: #00ff88;
@@ -184,7 +189,6 @@
             width: 100%;
         }
 
-        /* إضافة إضاءة نيون مميزة لكل كارت منشور */
         .post-card {
             background: var(--card-bg);
             border-radius: 15px;
@@ -533,6 +537,20 @@
     </div>
 
     <script>
+        // إعدادات قاعدة بيانات فايربيس الخاصة بمشروعك السحابي
+        const firebaseConfig = {
+            apiKey: "AIzaSyAdHXEti11YCm_qFz6pSxddoiMbEef6lnw",
+            authDomain: "ziad-design.firebaseapp.com",
+            projectId: "ziad-design",
+            storageBucket: "ziad-design.firebasestorage.app",
+            messagingSenderId: "940003578074",
+            appId: "1:940003578074:web:ade63b7b664e3127de15e3",
+            measurementId: "G-4H7FVPVCGE"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
         let isAdmin = false;
         let currentSection = '';
         let currentEditingId = null;
@@ -540,7 +558,7 @@
         let selectedShape = 'square';
         let isSaving = false;
 
-        let siteData = JSON.parse(localStorage.getItem('siteData_v4')) || {
+        let siteData = {
             profileImg: 'https://via.placeholder.com/150',
             welcomeText: 'أهلاً بك في معرض أعمالي والتصاميم الحصرية',
             boxes: [
@@ -555,9 +573,39 @@
         const daysMap = { 'السبت': 0, 'الأحد': 1, 'الإثنين': 2, 'الثلاثاء': 3, 'الأربعاء': 4, 'الخميس': 5, 'الجمعة': 6 };
 
         window.onload = function() {
-            checkAutomaticExpiry();
-            renderHome();
+            loadDataFromCloud();
         };
+
+        // جلب البيانات من السحابة وتحديثها للجميع فوراً (Real-time listener)
+        function loadDataFromCloud() {
+            db.collection("portfolio").doc("mainData").onSnapshot((doc) => {
+                if (doc.exists) {
+                    siteData = doc.data();
+                } else {
+                    db.collection("portfolio").doc("mainData").set(siteData);
+                }
+                checkAutomaticExpiry();
+                renderHome();
+                if (currentSection) {
+                    renderPosts();
+                }
+            }, (error) => {
+                console.log("خطأ في جلب البيانات من السحابة: ", error);
+            });
+        }
+
+        // حفظ البيانات للسحابة لتظهر لكل الناس
+        function saveToCloud() {
+            db.collection("portfolio").doc("mainData").set(siteData)
+                .then(() => {
+                    closeModals();
+                })
+                .catch((error) => {
+                    alert("حدث خطأ أثناء الحفظ بالسحابة: " + error.message);
+                    isSaving = false;
+                    document.getElementById('save-post-btn').innerText = 'حفظ ونشر';
+                });
+        }
 
         function checkAutomaticExpiry() {
             const jsDayIndex = new Date().getDay();
@@ -585,8 +633,8 @@
                 }
             });
 
-            if (updated) {
-                localStorage.setItem('siteData_v4', JSON.stringify(siteData));
+            if (updated && isAdmin) {
+                saveToCloud();
             }
         }
 
@@ -650,8 +698,7 @@
                 siteData.boxes.push({ id: newId, name: title });
             }
 
-            localStorage.setItem('siteData_v4', JSON.stringify(siteData));
-            closeModals();
+            saveToCloud();
             renderHome();
         }
 
@@ -659,8 +706,7 @@
             if(confirm('هل أنت متأكد من حذف هذه الخانة وكل التصاميم الموجودة بداخلها نهائياً؟')) {
                 siteData.boxes = siteData.boxes.filter(b => b.id !== currentEditingBoxId);
                 siteData.posts = siteData.posts.filter(p => p.section !== currentEditingBoxId);
-                localStorage.setItem('siteData_v4', JSON.stringify(siteData));
-                closeModals();
+                saveToCloud();
                 renderHome();
             }
         }
@@ -690,7 +736,7 @@
                 if (file) {
                     compressImage(file, 300, 300, 0.7, (compressedUrl) => {
                         siteData.profileImg = compressedUrl;
-                        localStorage.setItem('siteData_v4', JSON.stringify(siteData));
+                        saveToCloud();
                         renderHome();
                     });
                 }
@@ -703,7 +749,7 @@
             const newText = prompt('أدخل رسالة الترحيب الجديدة:', siteData.welcomeText);
             if (newText !== null && newText.trim() !== '') {
                 siteData.welcomeText = newText.trim();
-                localStorage.setItem('siteData_v4', JSON.stringify(siteData));
+                saveToCloud();
                 renderHome();
             }
         }
@@ -741,10 +787,8 @@
             document.getElementById('save-post-btn').innerText = 'حفظ ونشر';
         }
 
-        // دالة ضغط الصور الذكية جداً لتسريع الحفظ وتجنب الامتلاء
         function compressImage(file, maxWidth, maxHeight, quality, callback) {
             if (file.type.startsWith('video/')) {
-                // الفيديوهات يتم التعامل معها عبر الريدر العادي أو الروابط
                 const reader = new FileReader();
                 reader.onload = e => callback(e.target.result);
                 reader.readAsDataURL(file);
@@ -774,7 +818,6 @@
                     const ctx = canvas.getContext('2d');
                     ctx.drawImage(img, 0, 0, width, height);
                     
-                    // تحويل الصورة لـ jpeg مساحتها خفيفة جداً وسريعة الحفظ
                     callback(canvas.toDataURL('image/jpeg', quality));
                 };
                 img.src = event.target.result;
@@ -877,7 +920,7 @@
             }
 
             isSaving = true;
-            document.getElementById('save-post-btn').innerText = 'جاري الضغط والنشر...';
+            document.getElementById('save-post-btn').innerText = 'جاري الضغط والنشر بالسحابة...';
 
             const processSave = (mediaUrl) => {
                 let autoExpired = false;
@@ -923,13 +966,10 @@
                     siteData.posts.unshift(newPost);
                 }
 
-                localStorage.setItem('siteData_v4', JSON.stringify(siteData));
-                closeModals();
-                renderPosts();
+                saveToCloud();
             };
 
             if (fileInput.files && fileInput.files[0]) {
-                // ضغط الصورة فوراً بأقصى سرعة وأعلى جودة متوازنة (عرض أقصى 900 بكسل)
                 compressImage(fileInput.files[0], 900, 900, 0.75, (compressedUrl) => {
                     processSave(compressedUrl);
                 });
@@ -941,11 +981,9 @@
         function deleteCurrentPost() {
             if(confirm('هل أنت متأكد من حذف هذا المنشور نهائياً؟')) {
                 siteData.posts = siteData.posts.filter(p => p.id !== currentEditingId);
-                localStorage.setItem('siteData_v4', JSON.stringify(siteData));
-                closeModals();
-                renderPosts();
+                saveToCloud();
             }
         }
     </script>
 </body>
-        </html>
+                </html>
