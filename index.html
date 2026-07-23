@@ -3,75 +3,982 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>معرض التصاميم السحابي</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-slate-900 text-white min-h-screen flex flex-col items-center justify-between p-6">
+    <title>معرض التصاميم السحابي الاحترافي</title>
+    
+    <!-- استدعاء مكتبات فايربيس (Firebase SDK) السحابية -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
 
-    <!-- الموقع الحقيقي اللي بيظهر لأي زائر (مستحيل يختفي أو يفتح مكانه خانة) -->
-    <div class="w-full max-w-2xl text-center py-10">
-        <h1 id="site-title" class="text-3xl font-bold text-emerald-400 mb-4">معرض التصاميم السحابي</h1>
-        <p id="site-desc" class="text-slate-300 text-lg mb-8">أهلاً بك في معرض أعمالي والتصاميم الاحترافية.</p>
+    <style>
+        :root {
+            --primary-color: #00ff88;
+            --whatsapp-color: #25d366;
+            --bg-dark: #0f172a;
+            --card-bg: rgba(30, 41, 59, 0.75);
+            --text-color: #f8fafc;
+            --glow-neon: rgba(0, 255, 136, 0.35);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            transition: all 0.2s ease;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-color);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+
+        .fade-in {
+            animation: fadeIn 0.3s ease-out forwards;
+            opacity: 0;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        #main-home {
+            text-align: center;
+            width: 100%;
+            max-width: 900px;
+        }
+
+        .profile-img-container {
+            width: 130px;
+            height: 130px;
+            border-radius: 50%;
+            overflow: hidden;
+            margin: 0 auto 15px auto;
+            border: 3px solid var(--primary-color);
+            box-shadow: 0 0 25px var(--glow-neon);
+            position: relative;
+            background: #000;
+        }
+
+        .profile-img-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .admin-mode .profile-img-container, 
+        .admin-mode .welcome-msg {
+            cursor: pointer;
+            border-style: dashed;
+        }
+
+        .welcome-msg {
+            font-size: 1.4rem;
+            margin-bottom: 30px;
+            color: #cbd5e1;
+            padding: 5px;
+            border-radius: 5px;
+            text-shadow: 0 0 10px rgba(0, 255, 136, 0.2);
+        }
+
+        .nav-boxes {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 20px;
+            width: 100%;
+            margin-top: 20px;
+        }
+
+        .nav-box {
+            background: var(--card-bg);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 25px;
+            border-radius: 15px;
+            cursor: pointer;
+            backdrop-filter: blur(10px);
+            font-size: 1.2rem;
+            font-weight: bold;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3), 0 0 10px rgba(0, 255, 136, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .nav-box::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 100%;
+            height: 3px;
+            background: var(--primary-color);
+            box-shadow: 0 0 10px var(--primary-color);
+        }
+
+        .nav-box:hover {
+            border-color: var(--primary-color);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4), 0 0 20px var(--glow-neon);
+        }
+
+        .box-edit-pen {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            border: none;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem;
+            z-index: 10;
+        }
+        .admin-mode .box-edit-pen { display: flex; }
+
+        .section-view {
+            display: none;
+            width: 100%;
+            max-width: 1100px;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 15px;
+            position: relative;
+        }
+
+        .section-header::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            right: 0;
+            width: 150px;
+            height: 2px;
+            background: var(--primary-color);
+            box-shadow: 0 0 10px var(--primary-color);
+        }
+
+        .back-btn {
+            background: #334155;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        .back-btn:hover { background: #475569; }
+
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 25px;
+            width: 100%;
+        }
+
+        .post-card {
+            background: var(--card-bg);
+            border-radius: 15px;
+            overflow: hidden;
+            border: 1px solid rgba(0, 255, 136, 0.2);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4), 0 0 15px rgba(0, 255, 136, 0.15);
+        }
+
+        .post-card:hover {
+            border-color: var(--primary-color);
+            transform: translateY(-4px);
+            box-shadow: 0 12px 35px rgba(0, 0, 0, 0.5), 0 0 25px var(--glow-neon);
+        }
+
+        .post-card.expired {
+            opacity: 0.55;
+            border-color: #ef4444;
+            box-shadow: 0 5px 15px rgba(239, 68, 68, 0.15);
+            background: rgba(239, 68, 68, 0.05);
+        }
+
+        .expired-badge {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: #ef4444;
+            color: white;
+            padding: 6px 14px;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 0.9rem;
+            z-index: 5;
+            box-shadow: 0 4px 10px rgba(239, 68, 68, 0.4);
+        }
+
+        .post-media {
+            width: 100%;
+            height: 250px;
+            overflow: hidden;
+            position: relative;
+            background: #000;
+        }
+
+        .post-media img, .post-media video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .post-content {
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            flex-grow: 1;
+        }
+
+        .post-title {
+            font-size: 1.1rem;
+            font-weight: bold;
+        }
+
+        .post-price {
+            color: var(--primary-color);
+            font-size: 1.1rem;
+            font-weight: bold;
+            text-shadow: 0 0 8px rgba(0, 255, 136, 0.3);
+        }
+
+        .post-dates-info {
+            font-size: 0.85rem;
+            color: #94a3b8;
+        }
+
+        .whatsapp-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--whatsapp-color);
+            color: white;
+            text-decoration: none;
+            padding: 12px 20px;
+            border-radius: 30px;
+            font-weight: bold;
+            box-shadow: 0 0 15px rgba(37, 211, 102, 0.4);
+            animation: pulse-glow 2s infinite;
+            margin-top: auto;
+            text-align: center;
+        }
+
+        @keyframes pulse-glow {
+            0% { box-shadow: 0 0 5px rgba(37, 211, 102, 0.4); }
+            50% { box-shadow: 0 0 20px rgba(37, 211, 102, 0.8); transform: scale(1.02); }
+            100% { box-shadow: 0 0 5px rgba(37, 211, 102, 0.4); }
+        }
+
+        .add-card-btn, .add-box-card {
+            background: rgba(255, 255, 255, 0.02);
+            border: 2px dashed rgba(0, 255, 136, 0.3);
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 380px;
+            cursor: pointer;
+            font-size: 3rem;
+            color: #64748b;
+            box-shadow: 0 0 10px rgba(0, 255, 136, 0.05);
+        }
+
+        .add-card-btn:hover, .add-box-card:hover {
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+            background: rgba(0, 255, 136, 0.03);
+            box-shadow: 0 0 25px var(--glow-neon);
+        }
+
+        .add-box-card {
+            min-height: 100px;
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        #admin-key {
+            position: fixed;
+            bottom: 10px;
+            left: 10px;
+            background: transparent;
+            border: none;
+            color: rgba(255, 255, 255, 0.2);
+            font-size: 1.2rem;
+            cursor: pointer;
+            z-index: 1000;
+        }
+        #admin-key:hover { color: white; }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            padding: 20px;
+        }
+
+        .modal-content {
+            background: #1e293b;
+            padding: 30px;
+            border-radius: 15px;
+            width: 100%;
+            max-width: 500px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 0 35px rgba(0, 0, 0, 0.8), 0 0 15px rgba(0, 255, 136, 0.2);
+        }
+
+        .modal-content input, .modal-content select, .modal-content textarea {
+            width: 100%;
+            padding: 12px;
+            background: #0f172a;
+            border: 1px solid #334155;
+            color: white;
+            border-radius: 8px;
+            outline: none;
+        }
+
+        .modal-content input:focus { border-color: var(--primary-color); box-shadow: 0 0 10px rgba(0, 255, 136, 0.3); }
+
+        .shape-selector {
+            display: flex;
+            gap: 15px;
+        }
+
+        .shape-option {
+            flex: 1;
+            padding: 10px;
+            text-align: center;
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        .shape-option.active {
+            border-color: var(--primary-color);
+            background: rgba(0, 255, 136, 0.1);
+            box-shadow: 0 0 10px rgba(0, 255, 136, 0.2);
+        }
+
+        .action-btn {
+            background: var(--primary-color);
+            color: #0f172a;
+            border: none;
+            padding: 12px;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            box-shadow: 0 0 15px rgba(0, 255, 136, 0.4);
+        }
+        .action-btn:hover { opacity: 0.9; box-shadow: 0 0 25px rgba(0, 255, 136, 0.7); }
+
+        .delete-btn {
+            background: #ef4444;
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .edit-pen {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            border: none;
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+        }
+        .admin-mode .edit-pen { display: flex; }
         
-        <!-- زرار صغير تحت خالص للأدمن بس عشان يفتح لوحة التحكم بمزاجه -->
-        <button onclick="toggleAdmin()" class="text-xs text-slate-600 hover:text-slate-400 underline mt-20">إدارة الموقع (أدمن)</button>
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            color: #f8fafc;
+        }
+        .checkbox-container input { width: 20px; height: 20px; accent-color: #ef4444; }
+    </style>
+</head>
+<body>
+
+    <!-- الصفحة الرئيسية -->
+    <div id="main-home" class="fade-in">
+        <div class="profile-img-container" id="profile-container" onclick="editProfileImage()">
+            <img src="" alt="صورة البانر الشخصية" id="profile-img-display">
+        </div>
+        <h1 class="welcome-msg" id="main-welcome-text" onclick="editWelcomeText()">أهلاً بك في معرض أعمالي والتصاميم الحصرية</h1>
+        
+        <div class="nav-boxes" id="nav-boxes-container"></div>
     </div>
 
-    <!-- لوحة التحكم السرية (مقفولة تماماً ومش بتظهر إلا لما تدوس على الزرار اللي فوق) -->
-    <div id="admin-panel" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center p-4">
-        <div class="bg-slate-800 p-6 rounded-2xl w-full max-w-sm border border-slate-700 shadow-2xl">
-            <h2 class="text-lg font-bold text-amber-400 mb-3">لوحة التحكم السريعة ⚡</h2>
-            <input type="text" id="quick-input" placeholder="اكتب التعديل هنا..." class="w-full p-3 rounded bg-slate-900 border border-slate-600 text-white mb-4 text-sm focus:outline-none focus:border-emerald-500">
-            
-            <div class="flex gap-2">
-                <button onclick="saveChanges()" class="flex-1 bg-emerald-600 hover:bg-emerald-500 font-bold py-2 rounded text-sm transition">حفظ</button>
-                <button onclick="toggleAdmin()" class="bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded text-sm transition">إلغاء</button>
-            </div>
-            <p id="save-status" class="text-xs text-center text-yellow-400 mt-3"></p>
+    <!-- أقسام عرض المحتوى -->
+    <div id="section-view-container" class="section-view fade-in">
+        <div class="section-header">
+            <h2 id="section-title-heading">اسم القسم</h2>
+            <button class="back-btn" onclick="goHome()">الرئيسية</button>
+        </div>
+        <div class="grid-container" id="posts-grid"></div>
+    </div>
+
+    <!-- مفتاح الدخول الخفي للأدمن -->
+    <button id="admin-key" onclick="requestAdminAccess()">🔑</button>
+
+    <!-- نافذة كلمة المرور -->
+    <div class="modal" id="password-modal">
+        <div class="modal-content">
+            <h3>تسجيل دخول الأدمن</h3>
+            <input type="password" id="admin-pass-input" placeholder="أدخل كلمة المرور...">
+            <button class="action-btn" onclick="verifyAdmin()">دخول</button>
+            <button class="back-btn" onclick="closeModals()">إلغاء</button>
         </div>
     </div>
 
-    <!-- الكود البرمجي الصافي -->
+    <!-- نافذة إضافة أو تعديل خانة -->
+    <div class="modal" id="box-modal">
+        <div class="modal-content">
+            <h3 id="box-modal-title">إضافة خانة جديدة</h3>
+            <label>اسم الخانة:</label>
+            <input type="text" id="box-title-input" placeholder="مثال: خدمات المونتاج">
+            <button class="action-btn" onclick="saveBoxData()">حفظ الخانة</button>
+            <button class="delete-btn" id="delete-box-btn" style="display:none;" onclick="deleteCurrentBox()">حذف هذه الخانة وكل ما فيها</button>
+            <button class="back-btn" onclick="closeModals()">إلغاء</button>
+        </div>
+    </div>
+
+    <!-- نافذة إضافة / تعديل منشور -->
+    <div class="modal" id="post-modal">
+        <div class="modal-content">
+            <h3 id="post-modal-title">إضافة منشور جديد</h3>
+            
+            <label>اختر الصورة أو الفيديو (اختياري عند التعديل):</label>
+            <input type="file" id="media-file-input" accept="image/*,video/*">
+
+            <label>شكل إطار الصورة:</label>
+            <div class="shape-selector">
+                <div class="shape-option active" onclick="setMediaShape('square')" id="shape-square">مربع</div>
+                <div class="shape-option" onclick="setMediaShape('circle')" id="shape-circle">دائرة</div>
+            </div>
+
+            <label>عنوان المنشور / التصميم:</label>
+            <input type="text" id="post-title-input" placeholder="مثال: تصميم شعار احترافي">
+
+            <label>السعر (جنية):</label>
+            <input type="text" id="post-price-input" placeholder="مثال: 250 جنيه">
+
+            <label>جدولة الأيام (اختياري):</label>
+            <select id="post-day-start">
+                <option value="">بدون جدول زمني (مفتوح دائماً)</option>
+                <option value="السبت">السبت</option>
+                <option value="الأحد">الأحد</option>
+                <option value="الإثنين">الإثنين</option>
+                <option value="الثلاثاء">الثلاثاء</option>
+                <option value="الأربعاء">الأربعاء</option>
+                <option value="الخميس">الخميس</option>
+                <option value="الجمعة">الجمعة</option>
+            </select>
+            <select id="post-day-end">
+                <option value="">إلى يوم...</option>
+                <option value="السبت">السبت</option>
+                <option value="الأحد">الأحد</option>
+                <option value="الإثنين">الإثنين</option>
+                <option value="الثلاثاء">الثلاثاء</option>
+                <option value="الأربعاء">الأربعاء</option>
+                <option value="الخميس">الخميس</option>
+                <option value="الجمعة">الجمعة</option>
+            </select>
+
+            <div class="checkbox-container" id="expired-checkbox-con" style="display:none; margin-top: 5px;">
+                <input type="checkbox" id="post-expired-manual">
+                <label for="post-expired-manual" style="color: #ef4444; font-weight: bold;">تفعيل حالة: تم انتهاء العرض يدوياً</label>
+            </div>
+
+            <button class="action-btn" id="save-post-btn" onclick="savePostData()">حفظ ونشر</button>
+            <button class="delete-btn" id="delete-post-btn" style="display:none;" onclick="deleteCurrentPost()">حذف هذا المنشور</button>
+            <button class="back-btn" onclick="closeModals()">إلغاء</button>
+        </div>
+    </div>
+
     <script>
-        const siteDesc = document.getElementById("site-desc");
-        const adminPanel = document.getElementById("admin-panel");
-        const quickInput = document.getElementById("quick-input");
-        const saveStatus = document.getElementById("save-status");
+        // إعدادات قاعدة بيانات فايربيس الخاصة بمشروعك السحابي
+        const firebaseConfig = {
+            apiKey: "AIzaSyAdHXEti11YCm_qFz6pSxddoiMbEef6lnw",
+            authDomain: "ziad-design.firebaseapp.com",
+            projectId: "ziad-design",
+            storageBucket: "ziad-design.firebasestorage.app",
+            messagingSenderId: "940003578074",
+            appId: "1:940003578074:web:ade63b7b664e3127de15e3",
+            measurementId: "G-4H7FVPVCGE"
+        };
 
-        // أول ما الصفحة تفتح، بيقرا من ذاكرة التليفون المحلية فوراً وبكل هدوء من غير أخطاء
-        function loadData() {
-            const savedText = localStorage.getItem("ziad_site_text");
-            if (savedText) {
-                siteDesc.innerText = savedText;
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        let isAdmin = false;
+        let currentSection = '';
+        let currentEditingId = null;
+        let currentEditingBoxId = null;
+        let selectedShape = 'square';
+        let isSaving = false;
+
+        let siteData = {
+            profileImg: 'https://via.placeholder.com/150',
+            welcomeText: 'أهلاً بك في معرض أعمالي والتصاميم الحصرية',
+            boxes: [
+                { id: 'prices', name: 'أسعار التصاميم' },
+                { id: 'offers', name: 'عروض حصرية' },
+                { id: 'coordination', name: 'أسعار التنسيق' }
+            ],
+            posts: []
+        };
+
+        const whatsappNumber = '201503716164';
+        const daysMap = { 'السبت': 0, 'الأحد': 1, 'الإثنين': 2, 'الثلاثاء': 3, 'الأربعاء': 4, 'الخميس': 5, 'الجمعة': 6 };
+
+        window.onload = function() {
+            loadDataFromCloud();
+        };
+
+        // جلب البيانات من السحابة وتحديثها للجميع فوراً (Real-time listener)
+        function loadDataFromCloud() {
+            db.collection("portfolio").doc("mainData").onSnapshot((doc) => {
+                if (doc.exists) {
+                    siteData = doc.data();
+                } else {
+                    db.collection("portfolio").doc("mainData").set(siteData);
+                }
+                checkAutomaticExpiry();
+                renderHome();
+                if (currentSection) {
+                    renderPosts();
+                }
+            }, (error) => {
+                console.log("خطأ في جلب البيانات من السحابة: ", error);
+            });
+        }
+
+        // حفظ البيانات للسحابة لتظهر لكل الناس
+        function saveToCloud() {
+            db.collection("portfolio").doc("mainData").set(siteData)
+                .then(() => {
+                    closeModals();
+                })
+                .catch((error) => {
+                    alert("حدث خطأ أثناء الحفظ بالسحابة: " + error.message);
+                    isSaving = false;
+                    document.getElementById('save-post-btn').innerText = 'حفظ ونشر';
+                });
+        }
+
+        function checkAutomaticExpiry() {
+            const jsDayIndex = new Date().getDay();
+            const currentDayName = jsDayIndex === 6 ? 'السبت' : jsDayIndex === 0 ? 'الأحد' : jsDayIndex === 1 ? 'الإثنين' : jsDayIndex === 2 ? 'الثلاثاء' : jsDayIndex === 3 ? 'الأربعاء' : jsDayIndex === 4 ? 'الخميس' : 'الجمعة';
+            const currentDayVal = daysMap[currentDayName];
+
+            let updated = false;
+            siteData.posts.forEach(post => {
+                if (post.dayStart && post.dayEnd) {
+                    const startVal = daysMap[post.dayStart];
+                    const endVal = daysMap[post.dayEnd];
+                    
+                    let isCurrentlyValid = false;
+                    if (startVal <= endVal) {
+                        isCurrentlyValid = (currentDayVal >= startVal && currentDayVal <= endVal);
+                    } else {
+                        isCurrentlyValid = (currentDayVal >= startVal || currentDayVal <= endVal);
+                    }
+
+                    let shouldBeExpired = !isCurrentlyValid;
+                    if (post.autoExpired !== shouldBeExpired) {
+                        post.autoExpired = shouldBeExpired;
+                        updated = true;
+                    }
+                }
+            });
+
+            if (updated && isAdmin) {
+                saveToCloud();
             }
         }
 
-        // دالة فتح وغلق لوحة الأدمن (مستحيل تفتح لوحدها)
-        window.toggleAdmin = function() {
-            adminPanel.classList.toggle("hidden");
-            if (!adminPanel.classList.contains("hidden")) {
-                quickInput.value = siteDesc.innerText;
-                quickInput.focus();
+        function renderHome() {
+            document.getElementById('profile-img-display').src = siteData.profileImg;
+            document.getElementById('main-welcome-text').innerText = siteData.welcomeText;
+            
+            const boxesContainer = document.getElementById('nav-boxes-container');
+            boxesContainer.innerHTML = '';
+
+            siteData.boxes.forEach(box => {
+                const boxEl = document.createElement('div');
+                boxEl.className = 'nav-box fade-in';
+                boxEl.innerHTML = `
+                    <button class="box-edit-pen" onclick="event.stopPropagation(); openBoxModal('${box.id}')">✏️</button>
+                    ${box.name}
+                `;
+                boxEl.onclick = () => openSection(box.id);
+                boxesContainer.appendChild(boxEl);
+            });
+
+            if (isAdmin) {
+                const addBoxBtn = document.createElement('div');
+                addBoxBtn.className = 'add-box-card fade-in';
+                addBoxBtn.innerHTML = '+ إضافة خانة جديدة';
+                addBoxBtn.onclick = () => openBoxModal(null);
+                boxesContainer.appendChild(addBoxBtn);
             }
         }
 
-        // زرار الحفظ السريع
-        window.saveChanges = function() {
-            const val = quickInput.value.trim();
-            if (!val) return;
+        function openBoxModal(boxId) {
+            currentEditingBoxId = boxId;
+            const titleInput = document.getElementById('box-title-input');
+            const deleteBtn = document.getElementById('delete-box-btn');
 
-            saveStatus.innerText = "جاري الحفظ...";
-
-            // حفظ فوري ومحلي عشان يظهر في ثواني بدون تهنيج
-            localStorage.setItem("ziad_site_text", val);
-            siteDesc.innerText = val;
-
-            // قفل النافذة فوراً
-            adminPanel.classList.add("hidden");
-            saveStatus.innerText = "";
+            if (boxId) {
+                document.getElementById('box-modal-title').innerText = 'تعديل اسم الخانة';
+                const box = siteData.boxes.find(b => b.id === boxId);
+                titleInput.value = box.name;
+                deleteBtn.style.display = 'block';
+            } else {
+                document.getElementById('box-modal-title').innerText = 'إضافة خانة جديدة';
+                titleInput.value = '';
+                deleteBtn.style.display = 'none';
+            }
+            document.getElementById('box-modal').style.display = 'flex';
         }
 
-        loadData();
+        function saveBoxData() {
+            const title = document.getElementById('box-title-input').value.trim();
+            if(!title) {
+                alert('يرجى كتابة اسم الخانة!');
+                return;
+            }
+
+            if (currentEditingBoxId) {
+                const box = siteData.boxes.find(b => b.id === currentEditingBoxId);
+                box.name = title;
+            } else {
+                const newId = 'section_' + Date.now();
+                siteData.boxes.push({ id: newId, name: title });
+            }
+
+            saveToCloud();
+            renderHome();
+        }
+
+        function deleteCurrentBox() {
+            if(confirm('هل أنت متأكد من حذف هذه الخانة وكل التصاميم الموجودة بداخلها نهائياً؟')) {
+                siteData.boxes = siteData.boxes.filter(b => b.id !== currentEditingBoxId);
+                siteData.posts = siteData.posts.filter(p => p.section !== currentEditingBoxId);
+                saveToCloud();
+                renderHome();
+            }
+        }
+
+        function openSection(sectionId) {
+            currentSection = sectionId;
+            document.getElementById('main-home').style.display = 'none';
+            document.getElementById('section-view-container').style.display = 'block';
+            
+            const currentBox = siteData.boxes.find(b => b.id === sectionId);
+            document.getElementById('section-title-heading').innerText = currentBox ? currentBox.name : 'القسم';
+            renderPosts();
+        }
+
+        function goHome() {
+            document.getElementById('section-view-container').style.display = 'none';
+            document.getElementById('main-home').style.display = 'block';
+        }
+
+        function editProfileImage() {
+            if (!isAdmin) return;
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/*';
+            input.onchange = e => {
+                const file = e.target.files[0];
+                if (file) {
+                    compressImage(file, 300, 300, 0.7, (compressedUrl) => {
+                        siteData.profileImg = compressedUrl;
+                        saveToCloud();
+                        renderHome();
+                    });
+                }
+            };
+            input.click();
+        }
+
+        function editWelcomeText() {
+            if (!isAdmin) return;
+            const newText = prompt('أدخل رسالة الترحيب الجديدة:', siteData.welcomeText);
+            if (newText !== null && newText.trim() !== '') {
+                siteData.welcomeText = newText.trim();
+                saveToCloud();
+                renderHome();
+            }
+        }
+
+        function requestAdminAccess() {
+            if (isAdmin) {
+                if(confirm('هل تريد الخروج من وضع الأدمن؟')) {
+                    isAdmin = false;
+                    document.body.classList.remove('admin-mode');
+                    alert('تم الخروج من وضع الأدمن.');
+                    renderHome();
+                }
+            } else {
+                document.getElementById('password-modal').style.display = 'flex';
+            }
+        }
+
+        function verifyAdmin() {
+            const pass = document.getElementById('admin-pass-input').value;
+            if (pass === '20252025') {
+                isAdmin = true;
+                document.body.classList.add('admin-mode');
+                closeModals();
+                alert('أهلاً بك يا أدمن!');
+                renderHome();
+            } else {
+                alert('كلمة المرور غير صحيحة!');
+            }
+        }
+
+        function closeModals() {
+            document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
+            document.getElementById('admin-pass-input').value = '';
+            isSaving = false;
+            document.getElementById('save-post-btn').innerText = 'حفظ ونشر';
+        }
+
+        function compressImage(file, maxWidth, maxHeight, quality, callback) {
+            if (file.type.startsWith('video/')) {
+                const reader = new FileReader();
+                reader.onload = e => callback(e.target.result);
+                reader.readAsDataURL(file);
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const img = new Image();
+                img.onload = function() {
+                    let width = img.width;
+                    let height = img.height;
+
+                    if (width > maxWidth || height > maxHeight) {
+                        if (width > height) {
+                            height = Math.round((height *= maxWidth / width));
+                            width = maxWidth;
+                        } else {
+                            width = Math.round((width *= maxHeight / height));
+                            height = maxHeight;
+                        }
+                    }
+
+                    const canvas = document.createElement('canvas');
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+                    
+                    callback(canvas.toDataURL('image/jpeg', quality));
+                };
+                img.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function renderPosts() {
+            const grid = document.getElementById('posts-grid');
+            grid.innerHTML = '';
+
+            const sectionPosts = siteData.posts.filter(p => p.section === currentSection);
+
+            sectionPosts.forEach(post => {
+                const card = document.createElement('div');
+                let isExpired = post.expiredManual === true || post.autoExpired === true;
+
+                card.className = `post-card ${isExpired ? 'expired' : ''} fade-in`;
+                let mediaRadius = post.shape === 'circle' ? '50% 50%' : '0%';
+
+                let badgeHtml = isExpired ? `<div class="expired-badge">تم انتهاء العرض</div>` : '';
+                let whatsappBtnHtml = !isExpired ? `<a href="https://wa.me/${whatsappNumber}?text=${encodeURIComponent('مرحباً، أريد طلب هذا التصميم: ' + post.title)}" class="whatsapp-btn" target="_blank">اطلب الآن عبر واتساب</a>` : '';
+                let datesInfoHtml = post.dayStart ? `<div class="post-dates-info">العرض من ${post.dayStart} إلى ${post.dayEnd || 'مفتوح'}</div>` : '';
+
+                card.innerHTML = `
+                    ${badgeHtml}
+                    <button class="edit-pen" onclick="openPostModal('${post.id}')">✏️</button>
+                    <div class="post-media" style="border-radius: ${mediaRadius}; margin: ${post.shape === 'circle' ? '15px auto 0 auto' : '0'}; width: ${post.shape === 'circle' ? '200px' : '100%'}">
+                        <img src="${post.mediaUrl}" alt="تصميم">
+                    </div>
+                    <div class="post-content">
+                        <div class="post-title">${post.title}</div>
+                        <div class="post-price">${post.price}</div>
+                        ${datesInfoHtml}
+                        ${whatsappBtnHtml}
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+
+            if (isAdmin) {
+                const addBtn = document.createElement('div');
+                addBtn.className = 'add-card-btn fade-in';
+                addBtn.innerHTML = '+';
+                addBtn.onclick = () => openPostModal(null);
+                grid.appendChild(addBtn);
+            }
+        }
+
+        function openPostModal(postId) {
+            currentEditingId = postId;
+            const expiredCon = document.getElementById('expired-checkbox-con');
+            const deleteBtn = document.getElementById('delete-post-btn');
+
+            if (postId) {
+                document.getElementById('post-modal-title').innerText = 'تعديل المنشور';
+                const post = siteData.posts.find(p => p.id === postId);
+                document.getElementById('post-title-input').value = post.title;
+                document.getElementById('post-price-input').value = post.price;
+                document.getElementById('post-day-start').value = post.dayStart || '';
+                document.getElementById('post-day-end').value = post.dayEnd || '';
+                document.getElementById('post-expired-manual').checked = post.expiredManual || false;
+                setMediaShape(post.shape || 'square');
+                expiredCon.style.display = 'flex';
+                deleteBtn.style.display = 'block';
+            } else {
+                document.getElementById('post-modal-title').innerText = 'إضافة منشور جديد';
+                document.getElementById('post-title-input').value = '';
+                document.getElementById('post-price-input').value = '';
+                document.getElementById('post-day-start').value = '';
+                document.getElementById('post-day-end').value = '';
+                document.getElementById('post-expired-manual').checked = false;
+                setMediaShape('square');
+                expiredCon.style.display = 'none';
+                deleteBtn.style.display = 'none';
+            }
+            document.getElementById('media-file-input').value = '';
+            document.getElementById('post-modal').style.display = 'flex';
+        }
+
+        function setMediaShape(shape) {
+            selectedShape = shape;
+            document.getElementById('shape-square').classList.toggle('active', shape === 'square');
+            document.getElementById('shape-circle').classList.toggle('active', shape === 'circle');
+        }
+
+        function savePostData() {
+            if (isSaving) return;
+            const title = document.getElementById('post-title-input').value.trim();
+            const price = document.getElementById('post-price-input').value.trim();
+            const fileInput = document.getElementById('media-file-input');
+            const dayStart = document.getElementById('post-day-start').value;
+            const dayEnd = document.getElementById('post-day-end').value;
+            const expiredManual = document.getElementById('post-expired-manual').checked;
+
+            if (!title || !price) {
+                alert('يرجى كتابة عنوان التصميم والسعر!');
+                return;
+            }
+
+            isSaving = true;
+            document.getElementById('save-post-btn').innerText = 'جاري المعالجة...';
+
+            if (fileInput.files && fileInput.files[0]) {
+                const file = fileInput.files[0];
+                compressImage(file, 800, 800, 0.75, (mediaUrl) => {
+                    processPostSaving(mediaUrl, title, price, dayStart, dayEnd, expiredManual);
+                });
+            } else {
+                let existingMediaUrl = '';
+                if (currentEditingId) {
+                    const existingPost = siteData.posts.find(p => p.id === currentEditingId);
+                    if (existingPost) existingMediaUrl = existingPost.mediaUrl;
+                }
+                
+                if (!existingMediaUrl) {
+                    alert('يرجى اختيار صورة أو فيديو للمنشور!');
+                    isSaving = false;
+                    document.getElementById('save-post-btn').innerText = 'حفظ ونشر';
+                    return;
+                }
+                processPostSaving(existingMediaUrl, title, price, dayStart, dayEnd, expiredManual);
+            }
+        }
+
+        function processPostSaving(mediaUrl, title, price, dayStart, dayEnd, expiredManual) {
+            if (currentEditingId) {
+                const post = siteData.posts.find(p => p.id === currentEditingId);
+                post.title = title;
+                post.price = price;
+                post.mediaUrl = mediaUrl;
+                post.shape = selectedShape;
+                post.dayStart = dayStart;
+                post.dayEnd = dayEnd;
+                post.expiredManual = expiredManual;
+            } else {
+                const newPost = {
+                    id: 'post_' + Date.now(),
+                    section: currentSection,
+                    title: title,
+                    price: price,
+                    mediaUrl: mediaUrl,
+                    shape: selectedShape,
+                    dayStart: dayStart,
+                    dayEnd: dayEnd,
+                    expiredManual: false,
+                    autoExpired: false
+                };
+                siteData.posts.push(newPost);
+            }
+            saveToCloud();
+            renderPosts();
+        }
+
+        function deleteCurrentPost() {
+            if (confirm('هل أنت متأكد من حذف هذا المنشور؟')) {
+                siteData.posts = siteData.posts.filter(p => p.id !== currentEditingId);
+                saveToCloud();
+                renderPosts();
+            }
+        }
     </script>
 </body>
-</html>
+                </html>
