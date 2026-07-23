@@ -315,7 +315,7 @@
             font-weight: bold;
         }
 
-        /* مفتاح الأدمن في مكانه الصحيح تحت على الشمال تماماً */
+        /* مفتاح الأدمن تحت على الشمال تماماً زي ما طلبت */
         #admin-key {
             position: fixed;
             bottom: 10px;
@@ -459,7 +459,7 @@
         <div class="grid-container" id="posts-grid"></div>
     </div>
 
-    <!-- مفتاح الدخول الخفي للأدمن في مكانه الصحيح تحت ع الشمال -->
+    <!-- مفتاح الدخول الخفي للأدمن تحت على الشمال -->
     <button id="admin-key" onclick="requestAdminAccess()">🔑</button>
 
     <!-- نافذة كلمة المرور -->
@@ -538,7 +538,7 @@
     </div>
 
     <script>
-        // إعدادات قاعدة بيانات فايربيس الخاصة بمشروعك السحابي
+        // إعدادات قاعدة بيانات فايربيس السحابية الخاصة بمشروعك
         const firebaseConfig = {
             apiKey: "AIzaSyAdHXEti11YCm_qFz6pSxddoiMbEef6lnw",
             authDomain: "ziad-design.firebaseapp.com",
@@ -577,7 +577,7 @@
             loadDataFromCloud();
         };
 
-        // جلب البيانات من السحابة وتحديثها للجميع فوراً (Real-time listener)
+        // جلب البيانات من السحابة وتحديثها لحظياً للجميع
         function loadDataFromCloud() {
             db.collection("portfolio").doc("mainData").onSnapshot((doc) => {
                 if (doc.exists) {
@@ -595,10 +595,12 @@
             });
         }
 
-        // حفظ البيانات للسحابة لتظهر لكل الناس
+        // دالة الحفظ الحقيقي في السحابة لضمان ثبات التعديلات وتحديثها
         function saveToCloud() {
             db.collection("portfolio").doc("mainData").set(siteData)
                 .then(() => {
+                    isSaving = false;
+                    document.getElementById('save-post-btn').innerText = 'حفظ ونشر';
                     closeModals();
                 })
                 .catch((error) => {
@@ -921,7 +923,7 @@
             }
 
             isSaving = true;
-            document.getElementById('save-post-btn').innerText = 'جاري الضغط والنشر بالسحابة...';
+            document.getElementById('save-post-btn').innerText = 'جاري الحفظ في السحابة...';
 
             const processSave = (mediaUrl) => {
                 let autoExpired = false;
@@ -975,7 +977,12 @@
                     processSave(compressedUrl);
                 });
             } else {
-                processSave(currentEditingId ? null : 'https://via.placeholder.com/300');
+                let existingMedia = 'https://via.placeholder.com/300';
+                if (currentEditingId) {
+                    const existingPost = siteData.posts.find(p => p.id === currentEditingId);
+                    if (existingPost) existingMedia = existingPost.mediaUrl;
+                }
+                processSave(existingMedia);
             }
         }
 
