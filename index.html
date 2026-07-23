@@ -315,6 +315,7 @@
             font-weight: bold;
         }
 
+        /* مفتاح الأدمن في مكانه الصحيح تحت على الشمال تماماً */
         #admin-key {
             position: fixed;
             bottom: 10px;
@@ -458,7 +459,7 @@
         <div class="grid-container" id="posts-grid"></div>
     </div>
 
-    <!-- مفتاح الدخول الخفي للأدمن -->
+    <!-- مفتاح الدخول الخفي للأدمن في مكانه الصحيح تحت ع الشمال -->
     <button id="admin-key" onclick="requestAdminAccess()">🔑</button>
 
     <!-- نافذة كلمة المرور -->
@@ -906,79 +907,84 @@
 
         function savePostData() {
             if (isSaving) return;
+            
             const title = document.getElementById('post-title-input').value.trim();
             const price = document.getElementById('post-price-input').value.trim();
-            const fileInput = document.getElementById('media-file-input');
             const dayStart = document.getElementById('post-day-start').value;
             const dayEnd = document.getElementById('post-day-end').value;
             const expiredManual = document.getElementById('post-expired-manual').checked;
+            const fileInput = document.getElementById('media-file-input');
 
             if (!title || !price) {
-                alert('يرجى كتابة عنوان التصميم والسعر!');
+                alert('يرجى ملء العنوان والسعر على الأقل!');
                 return;
             }
 
             isSaving = true;
-            document.getElementById('save-post-btn').innerText = 'جاري المعالجة...';
+            document.getElementById('save-post-btn').innerText = 'جاري الضغط والنشر بالسحابة...';
+
+            const processSave = (mediaUrl) => {
+                let autoExpired = false;
+                if (dayStart && dayEnd) {
+                    const jsDayIndex = new Date().getDay();
+                    const currentDayName = jsDayIndex === 6 ? 'السبت' : jsDayIndex === 0 ? 'الأحد' : jsDayIndex === 1 ? 'الإثنين' : jsDayIndex === 2 ? 'الثلاثاء' : jsDayIndex === 3 ? 'الأربعاء' : jsDayIndex === 4 ? 'الخميس' : 'الجمعة';
+                    const currentDayVal = daysMap[currentDayName];
+                    const startVal = daysMap[dayStart];
+                    const endVal = daysMap[dayEnd];
+                    
+                    let isCurrentlyValid = false;
+                    if (startVal <= endVal) {
+                        isCurrentlyValid = (currentDayVal >= startVal && currentDayVal <= endVal);
+                    } else {
+                        isCurrentlyValid = (currentDayVal >= startVal || currentDayVal <= endVal);
+                    }
+                    autoExpired = !isCurrentlyValid;
+                }
+
+                if (currentEditingId) {
+                    const post = siteData.posts.find(p => p.id === currentEditingId);
+                    post.title = title;
+                    post.price = price;
+                    post.dayStart = dayStart;
+                    post.dayEnd = dayEnd;
+                    post.expiredManual = expiredManual;
+                    post.autoExpired = autoExpired;
+                    post.shape = selectedShape;
+                    if (mediaUrl) post.mediaUrl = mediaUrl;
+                } else {
+                    const newPost = {
+                        id: 'post_' + Date.now(),
+                        section: currentSection,
+                        title,
+                        price,
+                        dayStart,
+                        dayEnd,
+                        expiredManual: false,
+                        autoExpired: autoExpired,
+                        shape: selectedShape,
+                        mediaUrl: mediaUrl || 'https://via.placeholder.com/300'
+                    };
+                    siteData.posts.unshift(newPost);
+                }
+
+                saveToCloud();
+            };
 
             if (fileInput.files && fileInput.files[0]) {
-                const file = fileInput.files[0];
-                compressImage(file, 800, 800, 0.75, (mediaUrl) => {
-                    processPostSaving(mediaUrl, title, price, dayStart, dayEnd, expiredManual);
+                compressImage(fileInput.files[0], 900, 900, 0.75, (compressedUrl) => {
+                    processSave(compressedUrl);
                 });
             } else {
-                let existingMediaUrl = '';
-                if (currentEditingId) {
-                    const existingPost = siteData.posts.find(p => p.id === currentEditingId);
-                    if (existingPost) existingMediaUrl = existingPost.mediaUrl;
-                }
-                
-                if (!existingMediaUrl) {
-                    alert('يرجى اختيار صورة أو فيديو للمنشور!');
-                    isSaving = false;
-                    document.getElementById('save-post-btn').innerText = 'حفظ ونشر';
-                    return;
-                }
-                processPostSaving(existingMediaUrl, title, price, dayStart, dayEnd, expiredManual);
+                processSave(currentEditingId ? null : 'https://via.placeholder.com/300');
             }
-        }
-
-        function processPostSaving(mediaUrl, title, price, dayStart, dayEnd, expiredManual) {
-            if (currentEditingId) {
-                const post = siteData.posts.find(p => p.id === currentEditingId);
-                post.title = title;
-                post.price = price;
-                post.mediaUrl = mediaUrl;
-                post.shape = selectedShape;
-                post.dayStart = dayStart;
-                post.dayEnd = dayEnd;
-                post.expiredManual = expiredManual;
-            } else {
-                const newPost = {
-                    id: 'post_' + Date.now(),
-                    section: currentSection,
-                    title: title,
-                    price: price,
-                    mediaUrl: mediaUrl,
-                    shape: selectedShape,
-                    dayStart: dayStart,
-                    dayEnd: dayEnd,
-                    expiredManual: false,
-                    autoExpired: false
-                };
-                siteData.posts.push(newPost);
-            }
-            saveToCloud();
-            renderPosts();
         }
 
         function deleteCurrentPost() {
-            if (confirm('هل أنت متأكد من حذف هذا المنشور؟')) {
+            if(confirm('هل أنت متأكد من حذف هذا المنشور نهائياً؟')) {
                 siteData.posts = siteData.posts.filter(p => p.id !== currentEditingId);
                 saveToCloud();
-                renderPosts();
             }
         }
     </script>
 </body>
-                </html>
+    </html>
